@@ -1,0 +1,66 @@
+{% extends 'control/base.html' %}
+
+{% block title %}
+  {% if objeto %}Editar {{ info.singular }} #{{ objeto.pk }}{% else %}Nuevo {{ info.singular }}{% endif %} | FarmaSalud
+{% endblock %}
+
+{% block content %}
+<div class="titulo-pagina">
+  <div>
+    <p class="eyebrow">{{ info.icono|default:'📝' }} FORMULARIO DE CONTROL</p>
+    <h1>
+      {% if objeto %}
+        Modificar {{ info.singular }} #{{ objeto.pk }}
+      {% else %}
+        Registrar {{ info.singular }}
+      {% endif %}
+    </h1>
+    <p class="ayuda">Completa los datos correspondientes en el sistema de farmacia.</p>
+  </div>
+  <a href="{% url 'listado' seccion %}" class="boton secundario">
+    ← Volver a {{ info.titulo }}
+  </a>
+</div>
+
+<section class="tarjeta formulario-contenedor">
+  <form method="post">
+    {% csrf_token %}
+
+    {% if formulario.non_field_errors %}
+      <div class="aviso error">
+        <span>✕</span>
+        <div>{{ formulario.non_field_errors }}</div>
+      </div>
+    {% endif %}
+
+    <div class="campos-grid">
+      {% for campo in formulario %}
+        <div class="grupo-campo">
+          <label for="{{ campo.id_for_label }}">
+            {{ campo.label }}
+            {% if campo.field.required %}
+              <span class="campo-requerido" title="Campo obligatorio">*</span>
+            {% endif %}
+          </label>
+          {{ campo }}
+          {% if campo.help_text %}
+            <small class="ayuda">{{ campo.help_text }}</small>
+          {% endif %}
+          {% for error in campo.errors %}
+            <span class="error-texto">{{ error }}</span>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="pie-form">
+      <button type="submit" class="boton">
+        <span>💾</span> Guardar Información
+      </button>
+      <a href="{% url 'listado' seccion %}" class="boton secundario">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</section>
+{% endblock %}
