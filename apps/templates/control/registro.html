@@ -1,0 +1,41 @@
+{% extends 'control/base.html' %}
+
+{% block title %}Registrar Personal | FarmaSalud{% endblock %}
+
+{% block content %}
+<div class="login-contenedor">
+  <div class="acceso">
+    <div class="acceso-emblema">👤</div>
+    <h1>Nuevo Personal</h1>
+    <p class="subtitulo">Registro de cuenta de empleado o farmacéutico</p>
+
+    <form method="post">
+      {% csrf_token %}
+      
+      {% for campo in formulario %}
+        <div class="grupo-campo" style="margin-bottom: 14px;">
+          <label for="{{ campo.id_for_label }}">
+            {{ campo.label }}
+            {% if campo.field.required %}<span class="campo-requerido">*</span>{% endif %}
+          </label>
+          {{ campo }}
+          {% if campo.help_text %}
+            <small class="ayuda" style="font-size: 11px;">{{ campo.help_text }}</small>
+          {% endif %}
+          {% for error in campo.errors %}
+            <span class="error-texto">{{ error }}</span>
+          {% endfor %}
+        </div>
+      {% endfor %}
+
+      <button class="boton completo" type="submit" style="margin-top: 10px;">
+        Registrar Cuenta
+      </button>
+    </form>
+
+    <p style="text-align: center; margin-top: 20px; font-size: 13px;">
+      <a href="{% url 'login' %}">← Volver al inicio de sesión</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

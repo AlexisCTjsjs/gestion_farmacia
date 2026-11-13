@@ -1,0 +1,107 @@
+{% extends 'control/base.html' %}
+
+{% block title %}Acceso al Sistema | FarmaSalud{% endblock %}
+
+{% block content %}
+<div class="login-contenedor">
+  <div class="acceso">
+    <div class="acceso-emblema">⚕️</div>
+    <h1>FarmaSalud</h1>
+    <p class="subtitulo">Sistema de Control y Gestión Farmacéutica</p>
+
+    <form method="post" id="form-login">
+      {% csrf_token %}
+      
+      {% if formulario.non_field_errors %}
+        <div class="aviso error">
+          <span>✕</span>
+          <div>{{ formulario.non_field_errors }}</div>
+        </div>
+      {% endif %}
+
+      <div class="grupo-campo" style="margin-bottom: 14px;">
+        <label for="id_username">Usuario o Identificador</label>
+        {{ formulario.username }}
+        {% if formulario.username.errors %}
+          <span class="error-texto">{{ formulario.username.errors }}</span>
+        {% endif %}
+      </div>
+
+      <div class="grupo-campo" style="margin-bottom: 14px;">
+        <label for="id_password">Contraseña de Acceso</label>
+        {{ formulario.password }}
+        {% if formulario.password.errors %}
+          <span class="error-texto">{{ formulario.password.errors }}</span>
+        {% endif %}
+      </div>
+
+      <label class="check">
+        <input type="checkbox" name="recordarme" value="1">
+        <span>Recordar mi sesión en este equipo (14 días)</span>
+      </label>
+
+      <button type="submit" class="boton completo">
+        <span>Ingresar al Sistema</span> →
+      </button>
+    </form>
+
+    <!-- Caja de credenciales para prueba rápida -->
+    <div class="caja-credenciales">
+      <div class="caja-credenciales-titulo">
+        <span>🔑</span>
+        <span>Cuentas disponibles para iniciar sesión:</span>
+      </div>
+
+      <div class="cuenta-item">
+        <div>
+          <span class="cuenta-badge">🧑‍💼 Empleado:</span>
+          <code>empleado</code> / <code>empleado123</code>
+        </div>
+        <button type="button" class="btn-autollenar" onclick="autollenarEmpleado()">
+          Rellenar datos
+        </button>
+      </div>
+
+      <div class="cuenta-item">
+        <div>
+          <span class="cuenta-badge">👑 Administrador:</span>
+          <code>admin</code>
+        </div>
+        <button type="button" class="btn-autollenar" onclick="autollenarAdmin()">
+          Usar 'admin'
+        </button>
+      </div>
+    </div>
+
+    {% if registro_abierto %}
+      <p style="text-align: center; margin-top: 20px; font-size: 13px; color: var(--text-muted);">
+        ¿Nuevo empleado? <a href="{% url 'registro' %}">Registrar nuevo personal</a>
+      </p>
+    {% else %}
+      <p class="ayuda" style="text-align: center; margin-top: 20px; font-size: 12px;">
+        Registro público restringido. Solicita el alta a tu supervisor o administrador.
+      </p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function autollenarEmpleado() {
+  var userInput = document.getElementById('id_username');
+  var passInput = document.getElementById('id_password');
+  if (userInput) userInput.value = 'empleado';
+  if (passInput) passInput.value = 'empleado123';
+  if (passInput) passInput.focus();
+}
+
+function autollenarAdmin() {
+  var userInput = document.getElementById('id_username');
+  var passInput = document.getElementById('id_password');
+  if (userInput) userInput.value = 'admin';
+  if (passInput) {
+    passInput.value = '';
+    passInput.focus();
+  }
+}
+</script>
+{% endblock %}
