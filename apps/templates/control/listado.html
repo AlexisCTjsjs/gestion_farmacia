@@ -1,0 +1,307 @@
+{% extends 'control/base.html' %}
+
+{% block title %}{{ info.titulo }} | FarmaSalud{% endblock %}
+
+{% block content %}
+<div class="titulo-pagina">
+  <div>
+    <p class="eyebrow">{{ info.icono|default:'📁' }} MÓDULO DE FARMACIA</p>
+    <h1>{{ info.titulo }}</h1>
+    <p class="ayuda">Consulta, búsqueda rápida, edición y control de {{ info.titulo|lower }}.</p>
+  </div>
+  <a class="boton" href="{% url 'nuevo' seccion %}">
+    <span>+</span> Registrar {{ info.singular|default:'Nuevo' }}
+  </a>
+</div>
+
+<section class="tarjeta">
+  <form method="get" class="busqueda">
+    <input type="search" 
+           placeholder="Buscar por nombre, código, documento o términos clave..." 
+           name="q" 
+           value="{{ q }}">
+    <button class="boton secundario" type="submit">
+      <span>🔍</span> Buscar
+    </button>
+    {% if q %}
+      <a class="boton enlace" href="{% url 'listado' seccion %}">
+        ✕ Limpiar filtro
+      </a>
+    {% endif %}
+  </form>
+
+  <div class="tabla-scroll">
+    <table>
+      {% if seccion == 'medicamentos' %}
+        <thead>
+          <tr>
+            <th>Medicamento / Fármaco</th>
+            <th>Presentación</th>
+            <th>Precio Venta</th>
+            <th>Stock Actual</th>
+            <th>Receta</th>
+            <th>Estado</th>
+            <th class="col-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for obj, valores in datos %}
+            <tr>
+              <td>
+                <strong style="color: var(--primary-dark); font-size: 14px;">{{ obj.nombre }}</strong>
+                {% if obj.concentracion %}
+                  <span style="font-weight: 600; color: #475569;">({{ obj.concentracion }})</span>
+                {% endif %}
+                {% if obj.principio_activo %}
+                  <div style="font-size: 12px; color: var(--text-muted); margin-top: 1px;">
+                    {{ obj.principio_activo }}
+                  </div>
+                {% endif %}
+              </td>
+              <td>{{ obj.get_presentacion_display }}</td>
+              <td><strong style="color: var(--primary-dark);">S/ {{ obj.precio_venta|floatformat:2 }}</strong></td>
+              <td>
+                {% if obj.stock <= obj.stock_minimo %}
+                  <span class="etiqueta roja" title="¡Stock bajo de seguridad!">⚠️ {{ obj.stock }} un.</span>
+                {% else %}
+                  <span class="etiqueta verde">✓ {{ obj.stock }} un.</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if obj.requiere_receta %}
+                  <span class="etiqueta amarilla">Bajo Receta</span>
+                {% else %}
+                  <span class="etiqueta">Venta Libre</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if obj.activo %}
+                  <span class="etiqueta verde">✓ Activo</span>
+                {% else %}
+                  <span class="etiqueta roja">✕ Inactivo</span>
+                {% endif %}
+              </td>
+              <td class="col-acciones">
+                <div class="acciones">
+                  <a href="{% url 'editar' seccion obj.pk %}" class="btn-accion editar" title="Modificar medicamento">
+                    ✏️ Editar
+                  </a>
+                  <form method="post" action="{% url 'eliminar' seccion obj.pk %}" class="en-linea formulario-eliminar" style="display:inline; margin:0;">
+                    {% csrf_token %}
+                    <button class="btn-accion eliminar" type="submit" title="Eliminar medicamento">
+                      🗑️ Borrar
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                <div style="font-size: 36px; margin-bottom: 8px;">💊</div>
+                <strong>No se encontraron medicamentos en el catálogo.</strong>
+                <p style="margin: 6px 0 14px 0;">Usa el botón para registrar el primer producto.</p>
+                <a href="{% url 'nuevo' seccion %}" class="boton">+ Registrar Medicamento</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+
+      {% elif seccion == 'ventas' %}
+        <thead>
+          <tr>
+            <th>Comprobante</th>
+            <th>Fecha y Hora</th>
+            <th>Cliente / Paciente</th>
+            <th>Medicamento Dispensado</th>
+            <th>Total Cobrado</th>
+            <th>Método Pago</th>
+            <th>Estado</th>
+            <th class="col-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for obj, valores in datos %}
+            <tr>
+              <td>
+                <strong>#{{ obj.numero_comprobante }}</strong>
+                <div style="font-size: 11px; color: var(--text-muted);">{{ obj.get_tipo_comprobante_display }}</div>
+              </td>
+              <td><small style="color: var(--text-muted);">{{ obj.fecha|date:'d/m/Y H:i' }}</small></td>
+              <td>
+                {% if obj.cliente %}
+                  {{ obj.cliente.nombre }} {{ obj.cliente.apellido }}
+                {% else %}
+                  <span style="color: var(--text-muted);">Público General</span>
+                {% endif %}
+              </td>
+              <td>
+                <strong>{{ obj.medicamento.nombre }}</strong>
+                <div style="font-size: 11.5px; color: var(--text-muted);">
+                  Cant: {{ obj.cantidad }} unid. (S/ {{ obj.precio_unitario|floatformat:2 }} c/u)
+                </div>
+              </td>
+              <td><strong style="color: var(--primary-dark); font-size: 14.5px;">S/ {{ obj.total|floatformat:2 }}</strong></td>
+              <td><span class="etiqueta">{{ obj.get_metodo_pago_display }}</span></td>
+              <td>
+                <span class="etiqueta {% if obj.estado == 'Completada' %}verde{% else %}roja{% endif %}">
+                  {{ obj.get_estado_display }}
+                </span>
+              </td>
+              <td class="col-acciones">
+                <div class="acciones">
+                  <a target="_blank" rel="noopener" href="{% url 'imprimir' seccion obj.pk %}" class="btn-accion imprimir" title="Imprimir ticket de venta">
+                    🖨️ Ticket
+                  </a>
+                  <a href="{% url 'editar' seccion obj.pk %}" class="btn-accion editar" title="Editar venta">
+                    ✏️ Editar
+                  </a>
+                  <form method="post" action="{% url 'eliminar' seccion obj.pk %}" class="en-linea formulario-eliminar" style="display:inline; margin:0;">
+                    {% csrf_token %}
+                    <button class="btn-accion eliminar" type="submit" title="Anular o borrar venta">
+                      🗑️ Borrar
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                <div style="font-size: 36px; margin-bottom: 8px;">🛒</div>
+                <strong>No hay ventas registradas.</strong>
+                <p style="margin: 6px 0 14px 0;">Registra una venta o dispensación en mostrador.</p>
+                <a href="{% url 'nuevo' seccion %}" class="boton">+ Registrar Venta</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+
+      {% elif seccion == 'recetas' %}
+        <thead>
+          <tr>
+            <th>N.° Receta</th>
+            <th>Paciente / Cliente</th>
+            <th>Médico Prescriptor</th>
+            <th>Medicamento Prescrito</th>
+            <th>Posología & Tratamiento</th>
+            <th>Estado</th>
+            <th class="col-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for obj, valores in datos %}
+            <tr>
+              <td>
+                <strong>#{{ obj.numero_receta }}</strong>
+                <div style="font-size: 11px; color: var(--text-muted);">{{ obj.fecha_emision|date:'d/m/Y' }}</div>
+              </td>
+              <td>
+                <strong>{{ obj.cliente.nombre }} {{ obj.cliente.apellido }}</strong>
+                <div style="font-size: 11px; color: var(--text-muted);">DNI: {{ obj.cliente.dni }}</div>
+              </td>
+              <td>
+                {{ obj.medico.nombre }} {{ obj.medico.apellido }}
+                <div style="font-size: 11px; color: var(--text-muted);">CMP: {{ obj.medico.colegiatura }}</div>
+              </td>
+              <td>
+                <strong>{{ obj.medicamento.nombre }}</strong>
+                {% if obj.medicamento.concentracion %}
+                  <small style="color: var(--text-muted);">({{ obj.medicamento.concentracion }})</small>
+                {% endif %}
+              </td>
+              <td>
+                <div>{{ obj.dosis }} · {{ obj.frecuencia }}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">Duración: {{ obj.duracion }}</div>
+              </td>
+              <td>
+                <span class="etiqueta {% if obj.estado == 'Dispensada' %}verde{% elif obj.estado == 'Pendiente' %}amarilla{% else %}roja{% endif %}">
+                  {{ obj.get_estado_display }}
+                </span>
+              </td>
+              <td class="col-acciones">
+                <div class="acciones">
+                  <a target="_blank" rel="noopener" href="{% url 'imprimir' seccion obj.pk %}" class="btn-accion imprimir" title="Imprimir receta oficial">
+                    🖨️ Receta
+                  </a>
+                  <a href="{% url 'editar' seccion obj.pk %}" class="btn-accion editar" title="Editar receta">
+                    ✏️ Editar
+                  </a>
+                  <form method="post" action="{% url 'eliminar' seccion obj.pk %}" class="en-linea formulario-eliminar" style="display:inline; margin:0;">
+                    {% csrf_token %}
+                    <button class="btn-accion eliminar" type="submit" title="Eliminar receta">
+                      🗑️ Borrar
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                <div style="font-size: 36px; margin-bottom: 8px;">📋</div>
+                <strong>No se encontraron recetas médicas.</strong>
+                <p style="margin: 6px 0 14px 0;">Registra recetas emitidas por los médicos para su dispensación.</p>
+                <a href="{% url 'nuevo' seccion %}" class="boton">+ Registrar Receta</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+
+      {% else %}
+        <thead>
+          <tr>
+            {% for campo in info.campos %}
+              <th>{{ campo|capfirst }}</th>
+            {% endfor %}
+            <th class="col-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for obj, valores in datos %}
+            <tr>
+              {% for valor in valores %}
+                <td>
+                  {% if valor is True %}
+                    <span class="etiqueta verde">✓ Sí / Activo</span>
+                  {% elif valor is False %}
+                    <span class="etiqueta roja">✕ No / Inactivo</span>
+                  {% else %}
+                    {{ valor|default:'—'|truncatechars:80 }}
+                  {% endif %}
+                </td>
+              {% endfor %}
+              <td class="col-acciones">
+                <div class="acciones">
+                  <a href="{% url 'editar' seccion obj.pk %}" class="btn-accion editar" title="Modificar registro">
+                    ✏️ Editar
+                  </a>
+                  <form method="post" action="{% url 'eliminar' seccion obj.pk %}" class="en-linea formulario-eliminar" style="display:inline; margin:0;">
+                    {% csrf_token %}
+                    <button class="btn-accion eliminar" type="submit" title="Eliminar registro">
+                      🗑️ Borrar
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="10" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                <div style="font-size: 36px; margin-bottom: 8px;">{{ info.icono|default:'📁' }}</div>
+                <strong>No se encontraron registros en {{ info.titulo }}.</strong>
+                <p style="margin: 6px 0 14px 0;">Crea el primer registro usando el botón superior.</p>
+                <a href="{% url 'nuevo' seccion %}" class="boton">+ Registrar Nuevo</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      {% endif %}
+    </table>
+  </div>
+
+  <p class="ayuda" style="margin-top: 14px; font-size: 12.5px;">
+    Mostrando hasta 300 resultados. La columna de <strong>Acciones</strong> se mantiene siempre visible sin necesidad de desplazarse.
+  </p>
+</section>
+{% endblock %}

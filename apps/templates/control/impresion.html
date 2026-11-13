@@ -1,0 +1,190 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comprobante Farmacéutico #{{ objeto.pk }} | FarmaSalud</title>
+  <link rel="stylesheet" href="{% static 'control/css/style.css' %}">
+</head>
+<body class="pagina-impresion">
+  <div class="documento-receta">
+    <!-- Encabezado de la Farmacia -->
+    <div class="receta-header">
+      <div class="receta-logo">
+        <span class="receta-logo-icono">⚕️</span>
+        <div>
+          <h1>FarmaSalud</h1>
+          <p>Dispensación Farmacéutica y Control de Medicamentos · RUC 20584930129</p>
+          <p style="font-size: 11px; color: var(--text-muted);">Sede Central: Av. Salud y Vida 450 · Teléfono: (01) 480-1234</p>
+        </div>
+      </div>
+      <div class="receta-folio">
+        <span>Documento Oficial</span>
+        <strong>N.º {{ objeto.pk|stringformat:"06d" }}</strong>
+        <small style="color: var(--text-muted); display: block; font-size: 11px;">
+          Emisión: {% now "d/m/Y H:i" %}
+        </small>
+      </div>
+    </div>
+
+    {% if seccion == 'ventas' %}
+      <div class="receta-titulo">
+        {{ objeto.get_tipo_comprobante_display|upper }} DE VENTA FARMACÉUTICA
+      </div>
+      <div style="text-align: center; margin-bottom: 20px; font-weight: 700; color: var(--text-muted);">
+        Comprobante: {{ objeto.numero_comprobante }}
+      </div>
+
+      <dl class="receta-datos">
+        <dt>Fecha y Hora</dt>
+        <dd>{{ objeto.fecha|date:'d/m/Y H:i' }}</dd>
+
+        <dt>Cliente / Paciente</dt>
+        <dd>
+          {% if objeto.cliente %}
+            <strong>{{ objeto.cliente.nombre }} {{ objeto.cliente.apellido }}</strong> (DNI: {{ objeto.cliente.dni }})
+          {% else %}
+            Público General / Consumidor Final
+          {% endif %}
+        </dd>
+
+        <dt>Medicamento / Producto</dt>
+        <dd>
+          <strong>{{ objeto.medicamento.nombre }}</strong>
+          {% if objeto.medicamento.concentracion %}- {{ objeto.medicamento.concentracion }}{% endif %}
+          ({{ objeto.medicamento.get_presentacion_display }})
+        </dd>
+
+        <dt>Cantidad Dispensada</dt>
+        <dd><strong>{{ objeto.cantidad }} unidades</strong></dd>
+
+        <dt>Precio Unitario</dt>
+        <dd>S/ {{ objeto.precio_unitario|floatformat:2 }}</dd>
+
+        <dt>Monto Total Pagado</dt>
+        <dd>
+          <strong style="font-size: 18px; color: var(--primary-dark);">
+            S/ {{ objeto.total|floatformat:2 }}
+          </strong>
+        </dd>
+
+        <dt>Método de Pago</dt>
+        <dd><span class="etiqueta">{{ objeto.get_metodo_pago_display }}</span></dd>
+
+        <dt>Atendido por</dt>
+        <dd>{{ objeto.usuario.get_full_name|default:objeto.usuario.username|default:'Personal de Farmacia' }}</dd>
+
+        {% if objeto.observaciones %}
+          <dt>Observaciones</dt>
+          <dd>{{ objeto.observaciones }}</dd>
+        {% endif %}
+      </dl>
+
+      <div class="receta-firmas">
+        <div>
+          <div class="linea-firma">
+            Firma del Cliente / Paciente<br>
+            <small style="color: var(--text-muted); font-weight: normal;">Conforme de entrega</small>
+          </div>
+        </div>
+        <div>
+          <div class="linea-firma">
+            Sello y Firma del Farmacéutico<br>
+            <small style="color: var(--text-muted); font-weight: normal;">Dispensación autorizada</small>
+          </div>
+        </div>
+      </div>
+
+    {% elif seccion == 'recetas' %}
+      <div class="receta-titulo">
+        RECETA MÉDICA Y HOJA DE DISPENSACIÓN
+      </div>
+      <div style="text-align: center; margin-bottom: 20px; font-weight: 700; color: var(--text-muted);">
+        Folio Receta: #{{ objeto.numero_receta }}
+      </div>
+
+      <dl class="receta-datos">
+        <dt>Paciente</dt>
+        <dd><strong>{{ objeto.cliente.nombre }} {{ objeto.cliente.apellido }}</strong> (DNI: {{ objeto.cliente.dni }})</dd>
+
+        <dt>Médico Prescriptor</dt>
+        <dd><strong>{{ objeto.medico }}</strong> ({{ objeto.medico.especialidad }})</dd>
+
+        <dt>Centro Médico</dt>
+        <dd>{{ objeto.medico.clinica_hospital|default:'Consultorio Particular' }}</dd>
+
+        <dt>Fecha de Emisión</dt>
+        <dd>{{ objeto.fecha_emision|date:'d/m/Y' }}</dd>
+
+        {% if objeto.fecha_vencimiento %}
+          <dt>Válida Hasta</dt>
+          <dd>{{ objeto.fecha_vencimiento|date:'d/m/Y' }}</dd>
+        {% endif %}
+
+        <dt>Diagnóstico / Motivo</dt>
+        <dd>{{ objeto.diagnostico|default:'Tratamiento ambulatorio' }}</dd>
+
+        <dt>Medicamento Prescrito</dt>
+        <dd>
+          <strong style="font-size: 16px; color: var(--primary-dark);">
+            💊 {{ objeto.medicamento.nombre }}
+          </strong>
+          <br>
+          <small style="color: var(--text-muted);">
+            Principio activo: {{ objeto.medicamento.principio_activo|default:'—' }} · Presentación: {{ objeto.medicamento.get_presentacion_display }} {% if objeto.medicamento.concentracion %}· {{ objeto.medicamento.concentracion }}{% endif %}
+          </small>
+        </dd>
+
+        <dt>Posología / Dosis</dt>
+        <dd><strong>{{ objeto.dosis }}</strong></dd>
+
+        <dt>Frecuencia de Toma</dt>
+        <dd>{{ objeto.frecuencia }}</dd>
+
+        <dt>Duración del Tratamiento</dt>
+        <dd>{{ objeto.duracion }}</dd>
+
+        <dt>Indicaciones Farmacéuticas</dt>
+        <dd>{{ objeto.indicaciones|default:'Administrar según criterio médico con abundante agua.'|linebreaksbr }}</dd>
+
+        <dt>Estado de Dispensación</dt>
+        <dd>
+          <span class="etiqueta {% if objeto.estado == 'Dispensada' %}verde{% elif objeto.estado == 'Pendiente' %}amarilla{% else %}roja{% endif %}">
+            {{ objeto.get_estado_display }}
+          </span>
+        </dd>
+      </dl>
+
+      <div class="receta-firmas">
+        <div>
+          <div class="linea-firma">
+            Firma y Sello del Médico Prescriptor<br>
+            <small style="color: var(--text-muted); font-weight: normal;">Colegiatura Médica (CMP)</small>
+          </div>
+        </div>
+        <div>
+          <div class="linea-firma">
+            Sello de Dispensación FarmaSalud<br>
+            <small style="color: var(--text-muted); font-weight: normal;">Químico Farmacéutico Responsable</small>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="receta-pie">
+      Comprobante oficial expedido conforme a las normas de control de medicamentos e insumos médicos de farmacia. FarmaSalud promueve el uso racional y responsable de medicamentos.
+    </div>
+
+    <!-- Botones de Acción (Ocultos al imprimir) -->
+    <div class="no-imprimir" style="margin-top: 30px; display: flex; gap: 12px; justify-content: center;">
+      <button class="boton" onclick="window.print()">
+        <span>🖨️</span> Imprimir Documento / PDF
+      </button>
+      <button class="boton secundario" onclick="window.close()">
+        ✕ Cerrar Ventana
+      </button>
+    </div>
+  </div>
+</body>
+</html>

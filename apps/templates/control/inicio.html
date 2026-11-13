@@ -1,0 +1,224 @@
+{% extends 'control/base.html' %}
+
+{% block title %}Panel de Control Farmacéutico | FarmaSalud{% endblock %}
+
+{% block content %}
+<!-- Hero Banner de Farmacia -->
+<div class="hero-farmacia">
+  <div class="hero-texto">
+    <p class="eyebrow">⚕️ SISTEMA INTEGRAL DE FARMACIA</p>
+    <h2>Bienvenido a FarmaSalud</h2>
+    <p>Administración de catálogo de medicamentos, control de stock y lotes, registro de ventas y dispensación de recetas médicas de pacientes.</p>
+  </div>
+  <div class="hero-acciones">
+    <a class="boton" href="{% url 'nuevo' 'ventas' %}">
+      <span>🛒</span> + Nueva Venta
+    </a>
+    <a class="boton secundario" href="{% url 'nuevo' 'medicamentos' %}">
+      <span>💊</span> + Registrar Medicamento
+    </a>
+    <a class="boton secundario" href="{% url 'nuevo' 'recetas' %}">
+      <span>📋</span> + Registrar Receta
+    </a>
+  </div>
+</div>
+
+{% if stock_bajo_count > 0 %}
+  <div class="aviso warning" style="margin-bottom: 24px;">
+    <span style="font-size: 20px;">⚠️</span>
+    <div>
+      <strong>Atención de Inventario:</strong> Hay <strong>{{ stock_bajo_count }}</strong> medicamento(s) con stock igual o por debajo del mínimo de seguridad.
+      <a href="{% url 'listado' 'medicamentos' %}" style="font-weight: 700; text-decoration: underline; margin-left: 6px;">Ver medicamentos para reabastecimiento →</a>
+    </div>
+  </div>
+{% endif %}
+
+<!-- Rejilla de Indicadores / Métricas del Sistema -->
+<div class="rejilla">
+  {% for item in resumen %}
+    <a class="tarjeta-indicador" href="{% url 'listado' item.clave %}">
+      <div class="indicador-cabecera">
+        <span class="indicador-titulo">{{ item.titulo }}</span>
+        <div class="indicador-icono">{{ item.icono }}</div>
+      </div>
+      <div>
+        <div class="indicador-numero">{{ item.total }}</div>
+        <div class="indicador-enlace">
+          <span>Gestionar {{ item.singular }}s</span>
+          <span>→</span>
+        </div>
+      </div>
+    </a>
+  {% endfor %}
+</div>
+
+<!-- Sección de Ventas y Dispensaciones Recientes -->
+<section class="tarjeta">
+  <div class="tarjeta-header">
+    <h2><span>🛒</span> Últimas Ventas y Dispensaciones</h2>
+    <a href="{% url 'listado' 'ventas' %}" class="boton secundario boton-sm">Ver todas las ventas →</a>
+  </div>
+
+  <div class="tabla-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>N.° Comprobante</th>
+          <th>Tipo</th>
+          <th>Cliente / Paciente</th>
+          <th>Medicamento</th>
+          <th>Cantidad</th>
+          <th>Total (S/)</th>
+          <th>Método de Pago</th>
+          <th>Atendido por</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in ventas_recientes %}
+          <tr>
+            <td><strong>#{{ v.numero_comprobante }}</strong></td>
+            <td><span class="etiqueta azul">{{ v.get_tipo_comprobante_display }}</span></td>
+            <td>{{ v.cliente.nombre|default:'Público General' }} {{ v.cliente.apellido|default:'' }}</td>
+            <td><strong>{{ v.medicamento.nombre }}</strong></td>
+            <td>{{ v.cantidad }} un.</td>
+            <td><strong style="color: var(--primary-dark);">S/ {{ v.total|floatformat:2 }}</strong></td>
+            <td><span class="etiqueta">{{ v.get_metodo_pago_display }}</span></td>
+            <td><small style="color: var(--text-muted);">{{ v.usuario.username|default:'Personal' }}</small></td>
+            <td class="acciones">
+              <a target="_blank" rel="noopener" href="{% url 'imprimir' 'ventas' v.pk %}" class="btn-accion imprimir" title="Imprimir comprobante">
+                🖨️ Ticket
+              </a>
+              <a href="{% url 'editar' 'ventas' v.pk %}" class="btn-accion editar">
+                Detalle
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="9" style="text-align: center; padding: 26px; color: var(--text-muted);">
+              Aún no se han registrado ventas en el sistema.
+              <a href="{% url 'nuevo' 'ventas' %}" style="font-weight: 700; margin-left: 8px;">+ Registrar primera venta</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Sección de Medicamentos en Catálogo -->
+<section class="tarjeta">
+  <div class="tarjeta-header">
+    <h2><span>💊</span> Medicamentos e Inventario</h2>
+    <a href="{% url 'listado' 'medicamentos' %}" class="boton secundario boton-sm">Catálogo completo →</a>
+  </div>
+
+  <div class="tabla-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Código / SKU</th>
+          <th>Medicamento</th>
+          <th>Principio Activo</th>
+          <th>Presentación</th>
+          <th>Precio Venta</th>
+          <th>Stock Actual</th>
+          <th>Receta</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for med in medicamentos_recientes %}
+          <tr>
+            <td><small style="color: var(--text-muted);">{{ med.codigo_barras|default:'S/C' }}</small></td>
+            <td><strong>{{ med.nombre }}</strong> {% if med.concentracion %}<small>({{ med.concentracion }})</small>{% endif %}</td>
+            <td>{{ med.principio_activo|default:'—' }}</td>
+            <td>{{ med.get_presentacion_display }}</td>
+            <td><strong>S/ {{ med.precio_venta|floatformat:2 }}</strong></td>
+            <td>
+              {% if med.stock <= med.stock_minimo %}
+                <span class="etiqueta roja" title="¡Stock bajo!">⚠️ {{ med.stock }} unid.</span>
+              {% else %}
+                <span class="etiqueta verde">✓ {{ med.stock }} unid.</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if med.requiere_receta %}
+                <span class="etiqueta amarilla">Bajo receta</span>
+              {% else %}
+                <span class="etiqueta">Venta libre</span>
+              {% endif %}
+            </td>
+            <td class="acciones">
+              <a href="{% url 'editar' 'medicamentos' med.pk %}" class="btn-accion editar">Editar</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 26px; color: var(--text-muted);">
+              No hay medicamentos registrados en el catálogo.
+              <a href="{% url 'nuevo' 'medicamentos' %}" style="font-weight: 700; margin-left: 8px;">+ Registrar medicamento</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Sección de Recetas Médicas -->
+<section class="tarjeta">
+  <div class="tarjeta-header">
+    <h2><span>📋</span> Recetas Médicas para Dispensación</h2>
+    <a href="{% url 'listado' 'recetas' %}" class="boton secundario boton-sm">Ver todas las recetas →</a>
+  </div>
+
+  <div class="tabla-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>N.° Receta</th>
+          <th>Paciente</th>
+          <th>Médico Prescriptor</th>
+          <th>Medicamento</th>
+          <th>Dosis y Frecuencia</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rec in recetas_recientes %}
+          <tr>
+            <td><strong>#{{ rec.numero_receta }}</strong></td>
+            <td>{{ rec.cliente.nombre }} {{ rec.cliente.apellido }}</td>
+            <td>{{ rec.medico }}</td>
+            <td><strong>{{ rec.medicamento.nombre }}</strong></td>
+            <td>{{ rec.dosis }} · {{ rec.frecuencia }}</td>
+            <td>
+              <span class="etiqueta {% if rec.estado == 'Dispensada' %}verde{% elif rec.estado == 'Pendiente' %}amarilla{% else %}roja{% endif %}">
+                {{ rec.get_estado_display }}
+              </span>
+            </td>
+            <td class="acciones">
+              <a target="_blank" rel="noopener" href="{% url 'imprimir' 'recetas' rec.pk %}" class="btn-accion imprimir">
+                🖨️ Receta
+              </a>
+              <a href="{% url 'editar' 'recetas' rec.pk %}" class="btn-accion editar">
+                Editar
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 26px; color: var(--text-muted);">
+              No hay recetas médicas registradas recientemente.
+              <a href="{% url 'nuevo' 'recetas' %}" style="font-weight: 700; margin-left: 8px;">+ Registrar receta</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

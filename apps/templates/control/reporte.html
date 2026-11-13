@@ -1,0 +1,116 @@
+{% extends 'control/base.html' %}
+
+{% block title %}Reporte de Ventas y Dispensación | FarmaSalud{% endblock %}
+
+{% block content %}
+<div class="titulo-pagina">
+  <div>
+    <p class="eyebrow">📊 GESTIÓN ECONÓMICA Y VENTAS</p>
+    <h1>Reporte de Ventas y Dispensación</h1>
+    <p class="ayuda">Filtra por rango de fechas, método de pago y tipo de comprobante; exporta o imprime directo a PDF.</p>
+  </div>
+  <button type="button" class="boton no-imprimir" onclick="window.print()">
+    <span>🖨️</span> Imprimir Reporte
+  </button>
+</div>
+
+<section class="tarjeta">
+  <form method="get" class="filtros no-imprimir">
+    <label>
+      Desde fecha:
+      <input type="date" name="desde" value="{{ desde }}">
+    </label>
+    <label>
+      Hasta fecha:
+      <input type="date" name="hasta" value="{{ hasta }}">
+    </label>
+    <label>
+      Método de Pago:
+      <select name="metodo">
+        <option value="">— Todos los métodos —</option>
+        {% for valor, texto in metodos_pago %}
+          <option value="{{ valor }}" {% if metodo == valor %}selected{% endif %}>
+            {{ texto }}
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Tipo de Comprobante:
+      <select name="tipo">
+        <option value="">— Todos los tipos —</option>
+        {% for valor, texto in tipos_comprobante %}
+          <option value="{{ valor }}" {% if tipo == valor %}selected{% endif %}>
+            {{ texto }}
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="boton" type="submit">
+      <span>🔍</span> Filtrar
+    </button>
+    {% if desde or hasta or metodo or tipo %}
+      <a href="{% url 'reporte' %}" class="boton secundario">
+        ✕ Limpiar
+      </a>
+    {% endif %}
+  </form>
+
+  <div style="background: var(--primary-light); border: 1px solid var(--primary-border); border-radius: var(--radius-md); padding: 18px 22px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+    <div>
+      <span style="font-size: 13px; font-weight: 700; color: var(--primary-dark); text-transform: uppercase; letter-spacing: 0.05em;">Total Recaudado en el Período</span>
+      <div style="font-size: 28px; font-weight: 800; color: var(--primary-dark);">
+        S/ {{ total_recaudado|floatformat:2 }}
+      </div>
+    </div>
+    <div style="font-size: 14px; color: var(--text-muted);">
+      Total transacciones listadas: <strong>{{ ventas|length }}</strong>
+    </div>
+  </div>
+
+  <div class="tabla-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 70px;">ID</th>
+          <th>N.° Comprobante</th>
+          <th>Fecha y Hora</th>
+          <th>Tipo</th>
+          <th>Cliente / Paciente</th>
+          <th>Medicamento</th>
+          <th>Cant.</th>
+          <th>Total (S/)</th>
+          <th>Pago</th>
+          <th>Atendido por</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in ventas %}
+          <tr>
+            <td><strong>#{{ v.pk }}</strong></td>
+            <td><strong>{{ v.numero_comprobante }}</strong></td>
+            <td>{{ v.fecha|date:'d/m/Y H:i' }}</td>
+            <td><span class="etiqueta azul">{{ v.get_tipo_comprobante_display }}</span></td>
+            <td>{{ v.cliente.nombre|default:'Público General' }} {{ v.cliente.apellido|default:'' }}</td>
+            <td><strong>{{ v.medicamento.nombre }}</strong></td>
+            <td>{{ v.cantidad }}</td>
+            <td><strong style="color: var(--primary-dark);">S/ {{ v.total|floatformat:2 }}</strong></td>
+            <td><span class="etiqueta">{{ v.get_metodo_pago_display }}</span></td>
+            <td><small style="color: var(--text-muted);">{{ v.usuario.username|default:'Personal' }}</small></td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="10" style="text-align: center; padding: 32px; color: var(--text-muted);">
+              No se encontraron ventas registradas con los filtros seleccionados.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="ayuda" style="margin-top: 14px; font-size: 13px;">
+    Mostrando hasta 500 registros para optimización y reporte de cierre de caja.
+  </p>
+</section>
+{% endblock %}

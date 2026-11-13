@@ -1,0 +1,93 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}FarmaSalud — Sistema de Gestión Farmacéutica{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'control/css/style.css' %}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚕️</text></svg>">
+</head>
+<body>
+  <header class="cabecera">
+    <a href="{% url 'inicio' %}" class="marca">
+      <div class="marca-icono">⚕️</div>
+      <div class="marca-info">
+        <span class="marca-titulo">Farma<span>Salud</span></span>
+        <span class="marca-subtitulo">Gestión Farmacéutica</span>
+      </div>
+    </a>
+
+    {% if user.is_authenticated %}
+    <div class="usuario-panel">
+      <div class="usuario-info">
+        <div class="usuario-avatar">{{ user.username|make_list|first|upper }}</div>
+        <span class="usuario-nombre">{{ user.get_full_name|default:user.username }}</span>
+        {% if user.is_superuser %}
+          <span class="badge-rol badge-admin" title="Administrador del Sistema">👑 Administrador</span>
+        {% else %}
+          <span class="badge-rol badge-empleado" title="Empleado Farmacéutico">🧑‍💼 Empleado</span>
+        {% endif %}
+      </div>
+      <form action="{% url 'logout' %}" method="post" style="display:inline; margin:0;">
+        {% csrf_token %}
+        <button class="btn-salir" type="submit" title="Cerrar sesión">
+          <span>Salir</span> ✕
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </header>
+
+  {% if user.is_authenticated %}
+  <nav class="menu">
+    <a href="{% url 'inicio' %}" class="{% if request.resolver_match.url_name == 'inicio' %}activo{% endif %}">
+      🏠 Inicio
+    </a>
+    <a href="{% url 'listado' 'medicamentos' %}" class="{% if seccion == 'medicamentos' %}activo{% endif %}">
+      💊 Medicamentos
+    </a>
+    <a href="{% url 'listado' 'ventas' %}" class="{% if seccion == 'ventas' %}activo{% endif %}">
+      🛒 Ventas y Caja
+    </a>
+    <a href="{% url 'listado' 'recetas' %}" class="{% if seccion == 'recetas' %}activo{% endif %}">
+      📋 Recetas Médicas
+    </a>
+    <a href="{% url 'listado' 'clientes' %}" class="{% if seccion == 'clientes' %}activo{% endif %}">
+      👥 Clientes
+    </a>
+    <a href="{% url 'listado' 'categorias' %}" class="{% if seccion == 'categorias' %}activo{% endif %}">
+      🏷️ Categorías
+    </a>
+    <a href="{% url 'listado' 'laboratorios' %}" class="{% if seccion == 'laboratorios' %}activo{% endif %}">
+      🏭 Laboratorios
+    </a>
+    <a href="{% url 'listado' 'medicos' %}" class="{% if seccion == 'medicos' %}activo{% endif %}">
+      👨‍⚕️ Médicos Prescriptores
+    </a>
+    <a href="{% url 'reporte' %}" class="{% if request.resolver_match.url_name == 'reporte' %}activo{% endif %}">
+      📊 Reportes de Ventas
+    </a>
+  </nav>
+  {% endif %}
+
+  <main class="contenedor">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="aviso {{ message.tags }}" role="status">
+          {% if message.tags == 'success' %}✓{% elif message.tags == 'error' %}✕{% else %}ℹ{% endif %}
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <strong>FarmaSalud</strong> · Sistema Integral de Gestión, Inventario y Dispensación Farmacéutica · &copy; 2026 Todos los derechos reservados
+  </footer>
+
+  <script src="{% static 'control/js/app.js' %}"></script>
+</body>
+</html>
